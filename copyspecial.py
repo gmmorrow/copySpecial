@@ -7,7 +7,7 @@
 # http://www.apache.org/licenses/LICENSE-2.0
 
 # give credits
-__author__ = "Gabrielle"
+__author__ = "Gabrielle, jazmyne, python documentation"
 
 import re
 import os
@@ -19,32 +19,48 @@ import argparse
 
 def get_special_paths(dirname):
     """Given a dirname, returns a list of all its special files."""
-    paths_list = os.listdir(dirname)
-    
     special_paths = []
-    for filename in paths_list:
-        match = re.search(r'_\w+_', filename)
+    for filename in os.listdir(dirname):
+        match = re.search(r'__\w+__', filename)
         if match:
             special_paths.append(os.path.abspath(
                 os.path.join(dirname, filename)))
-    #return absolute path to special files
     return special_paths
-    
+
+
+def create_dir(path):
+    """Check to see if dir exists"""
+    if not os.path.exists(path):
+        try:
+            os.makedirs(path)
+        except OSError:
+            print(f"Creation of dir {path} failed")
+            return False
+    return True
 
 
 def copy_to(path_list, dest_dir):
-    if not os.path.exists(dest_dir):
-        os.mkdir(os.path.abspath(dest_dir))
-    for dest_dir in path_list:
-        shutil.copy(dest_dir, os.path.abspath(dest_dir)) 
+    """shows path list and directory, copies to destination"""
+    # if not os.path.isdir(dest_dir):
+    #     os.makedirs(dest_dir)
+    # for path in path_list:
+    #     shutil.copy(path, dest_dir)
+    #     return
+    create_dir_status = create_dir(dest_dir)
+    if not create_dir_status:
+        return
+    for f in path_list:
+        shutil.copyfile(f, os.path.join(dest_dir, os.path.basename(f)))
+
 
 def zip_to(path_list, dest_zip):
-    cmd = ['zip', '-j', 'dest_zip']
-    cmd.extend(path_list)
+    """copies destinations if exists"""
     print("Command im going to do:")
-    print(' '.join(cmd))
-    subprocess.check_output(cmd)
-    
+    for path in path_list:
+        print(f'zip -j {dest_zip}')
+        subprocess.run(['zip', '-j', dest_zip, path])
+    return
+
 
 def main(args):
     """Main driver code for copyspecial."""
@@ -63,14 +79,18 @@ def main(args):
     # This is input data validation. If something is wrong (or missing) with
     # any required args, the general rule is to print a usage message and
     # exit(1).
+    if not ns:
+        sys.exit(1)
     special_paths = get_special_paths(ns.from_dir)
 
     # Your code here: Invoke (call) your functions
+    if ns.todir:
+        copy_to(special_paths, ns.todir)
     if ns.tozip:
         zip_to(special_paths, ns.tozip)
-    else:
-        special_paths = get_special_paths(ns.from_dir)
-        print('\n'.join(special_paths))
+    if not ns.todir and not ns.tozip:
+        print(*special_paths, sep='\n')
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
